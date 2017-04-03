@@ -15,8 +15,12 @@ class monitor {
         this.cafeDomain = cafeDomain;
         crawler.crawl(cafeDomain, (cafeData, boardData) => {
             checkedCafeData = cafeData;
-            for (var index in boardData)
+
+            let boardDataLength = Object.keys(boardData).length == 0 ? 0 : Object.keys(boardData).length - 1;
+            for (var index = boardDataLength; index >= 0; index--) {
                 this.push(boardData[index]);
+                if (index == 0) lastCheckedArticleId = boardData[index]['articleId'];
+            }
         });
 
         this.on();
@@ -42,9 +46,10 @@ class monitor {
     check() {
         crawler.crawl(this.cafeDomain, (cafeData, boardData) => {
             //게시판 내 게시글들을 비교합니다.
-            for (var index in boardData) {
+            let boardDataLength = Object.keys(boardData).length == 0 ? 0 : Object.keys(boardData).length - 1;
+            for (var index = boardDataLength; index >= 0; index--) {
                 if (this.push(boardData[index])) {
-                    if(lastCheckedArticleId > boardData[index]['articleId']) continue;
+                    if (lastCheckedArticleId > boardData[index]['articleId']) continue;
                     lastCheckedArticleId = boardData[index]['articleId'];
 
                     let newArticleEvent = new events.NewArticleEvent(this);
