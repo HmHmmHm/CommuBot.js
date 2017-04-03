@@ -5,7 +5,8 @@ var readline = require('readline');
 var fs = require('fs');
 var Discord = require('discord.js');
 
-var hookedClient = null;
+var discordClient = null;
+let parsedChannels = {};
 
 logger(`akobot 프로그램이 실행 되었습니다.`);
 logger(`help 명령어로 사용가능한 명령어를 확인할 수 있습니다.\n`);
@@ -19,15 +20,14 @@ class AKOBot {
     static info() {
         logger('프로그램에 필요한 정보를 입력해주세요!\n');
         logger('domain <카페도메인> - cafe.naver.com/*.cafe');
-        logger('id <웹훅ID> - 디스코드 채팅방의 웹훅ID를 넣어주세요.');
-        logger('token <웹훅ID> - 디스코드 채팅방의 웹훅토큰을 넣어주세요.');
+        logger('token <토큰값> - 디스코드 채팅봇의 비밀토큰을 넣어주세요.');
+        logger('default <채널명> - 디스코드 채팅봇이 활동할 채널명을 넣어주세요.');
         logger('connect - 현재 입력한 정보로 연결을 시도합니다.\n');
     }
 
     static connect() {
         if (typeof(privates['cafeDomain']) === 'undefined' ||
-            typeof(privates['webHookId']) === 'undefined' ||
-            typeof(privates['webHookToken']) === 'undefined') {
+            typeof(privates['token']) === 'undefined') {
             AKOBot.info();
             return;
         }
@@ -35,11 +35,35 @@ class AKOBot {
         var monitor = require('./monitor.js');
         var PlayIsletMonitor = new monitor(privates['cafeDomain']);
 
-        hookedClient = new Discord.WebhookClient(privates['webHookId'], privates['webHookToken']);
+        const discordClient = new Discord.Client();
+
+        discordClient.on('ready', () => {
+            let iterator = discordClient.channels.entries();
+            while (true) {
+                let index = iterator.next();
+                if (index.done) break;
+                parsedChannels[index.value[1].name] = index.value[1];
+            }
+        });
+
+        //TODO 비속어 판단 및 삭제처리
+        /*
+        discordClient.on('message', message => {
+            if (message.content === 'ping') {
+                message.reply('pong');
+                message.delete()
+                .then(msg => console.log(`Deleted message from ${msg.author}`))
+                    .catch(console.error);
+            }
+        });
+        */
+
+        discordClient.login(privates['token']);
     }
 
-    static send(message){
-        if(hookedClient !== null) hookedClient.sendMessage(message);
+    static sendMessage(message) {
+        if (typeof(parsedChannels[privates['default']]) === 'undefined') return;
+        parsedChannels[privates['default']].sendMessage(message);
     }
 }
 
@@ -51,13 +75,13 @@ let commandMap = (input) => {
             privates['cafeDomain'] = args[1];
             logger(`도메인 입력이 완료되었습니다.`);
             break;
-        case 'id':
-            privates['webHookId'] = args[1];
-            logger(`웹훅아이디 입력이 완료되었습니다.`);
-            break;
         case 'token':
-            privates['webHookToken'] = args[1];
-            logger(`웹훅토큰 입력이 완료되었습니다.`);
+            privates['token'] = args[1];
+            logger(`토큰 입력이 완료되었습니다.`);
+            break;
+        case 'default':
+            privates['default'] = args[1];
+            logger(`채널명 입력이 완료되었습니다.`);
             break;
         case 'connect':
             AKOBot.connect();
@@ -119,20 +143,20 @@ var lengthLimit = (message, limit, dotLength) => {
 dispatcher.on(events.NewArticleEvent, (event) => {
     let message = `[새 게시글] [${event.category}] '${lengthLimit(event.title, 15)}' ${event.prettyLink}`;
     logger(message);
-    AKOBot.send(message);
+    AKOBot.sendMessage(message);
 }, dispatcher.LOW);
 
 dispatcher.on(events.ArticleCommentChangedEvent, (event) => {
-    if(event.oldCommentCount >= event.newCommentCount) return;
+    if (event.oldCommentCount >= event.newCommentCount) return;
     let message = `[새 댓글] [${event.oldCommentCount}개->${event.newCommentCount}개] [${event.category}] '${lengthLimit(event.title, 15)}' ${event.prettyLink}`;
     logger(message);
-    AKOBot.send(message);
+    AKOBot.sendMessage(message);
 }, dispatcher.LOW);
 
 dispatcher.on(events.CafeMemberChangedEvent, (event) => {
     let message = `[새 회원] 회원수:${event.oldMemberCount}명->${event.newMemberCount}명, 승인대기수:${event.oldPreMemberCount}명->${event.newPreMemberCount}명`;
     logger(message);
-    AKOBot.send(message);
+    AKOBot.sendMessage(message);
 }, dispatcher.LOW);
 
 
@@ -144,32 +168,8 @@ try {
     privates = require('./privates.json');
     AKOBot.connect();
 } catch (error) {
-logger(error);
+    logger(error);
     AKOBot.info();
 }
 
 module.exports = AKOBot;
-
-/*
-const client = new Discord.Client();
-
-client.on('ready', () => {
-  console.log('I am ready!');
-});
-
-client.on('message', message => {
-  if (message.content === 'ping') {
-    message.reply('pong');
-  }
-});
-
-client.login('');
-*/
-
-
-//const Discord = require('discord.js');
-// create a new webhook
-//const hook = new Discord.WebhookClient('', '');
-
-// send a message using the webhook
-//hook.sendMessage('webhook test!');
