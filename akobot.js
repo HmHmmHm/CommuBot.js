@@ -163,13 +163,13 @@ client.on('message', message => {
   }
 });
 
-client.login('Mjk4MTM3NTUzMTY3NzEyMjU3.C8K9yA.KQPTrgFKXTtT0SJZBaSqxt2YvHw');
+client.login('');
 */
 
 
 //const Discord = require('discord.js');
 // create a new webhook
-//const hook = new Discord.WebhookClient('298139637715697665', 'RNWgeRJfG0GaMK5zMx6teCBTzrFk3f2rAf-BY2wlfKkpyqxPi1VaFIbqtkgbmpI2PmV-');
+//const hook = new Discord.WebhookClient('', '');
 
 // send a message using the webhook
 //hook.sendMessage('webhook test!');
