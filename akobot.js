@@ -4,6 +4,7 @@ var logger = require('./logger.js');
 var readline = require('readline');
 var fs = require('fs');
 var Discord = require('discord.js');
+var Gentleman = require('gentleman.js');
 
 var discordClient = null;
 let parsedChannels = {};
@@ -46,24 +47,25 @@ class AKOBot {
             }
         });
 
-        //TODO 비속어 판단 및 삭제처리
-        /*
+        // 비속어 판단 및 삭제처리
         discordClient.on('message', message => {
-            if (message.content === 'ping') {
-                message.reply('pong');
-                message.delete()
-                .then(msg => console.log(`Deleted message from ${msg.author}`))
-                    .catch(console.error);
+            if(message.author.bot) return;
+            //message.author.username
+            var fixedMessage = Gentleman.fix(message.content);
+            if (message.content != fixedMessage) {
+                message.reply(`[비속어필터작동] ${fixedMessage}`);
+                message.delete();
+                logger(`[비속어필터작동] ${message.author.username}:${message}`);
             }
         });
-        */
 
         discordClient.login(privates['token']);
     }
 
     static sendMessage(message) {
-        if (typeof(parsedChannels[privates['default']]) === 'undefined') return;
-        parsedChannels[privates['default']].sendMessage(message);
+        for(var index in privates['default']){
+            parsedChannels[privates['default'][index]].sendMessage(message);
+        }
     }
 }
 
@@ -80,7 +82,7 @@ let commandMap = (input) => {
             logger(`토큰 입력이 완료되었습니다.`);
             break;
         case 'default':
-            privates['default'] = args[1];
+            privates['default'].push(args[1]);
             logger(`채널명 입력이 완료되었습니다.`);
             break;
         case 'connect':

@@ -80,6 +80,8 @@ class monitor {
 
                 //카페 내 가입인원 수가 변경되었다는 것을 알립니다.
                 dispatcher.call(cafeMemberChangedEvent);
+                checkedCafeData.memberCount = cafeData.memberCount;
+                checkedCafeData.preMemberCount = cafeData.preMemberCount;
             }
         });
     }

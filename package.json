@@ -12,6 +12,7 @@
     "cheerio": "^0.22.0",
     "deploy-event": "^1.0.1",
     "discord.js": "^11.0.0",
+    "gentleman.js": "^1.0.0",
     "iconv": "^2.2.1",
     "request": "^2.81.0"
   }
