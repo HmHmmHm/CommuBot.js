@@ -1,10 +1,13 @@
-var events = require('./events.js');
-var dispatcher = require('./dispatcher.js');
-var logger = require('./logger.js');
-var readline = require('readline');
-var fs = require('fs');
-var Discord = require('discord.js');
-var Gentleman = require('gentleman.js');
+var events = require('./events.js'),
+    dispatcher = require('./dispatcher.js'),
+    logger = require('./logger.js'),
+    readline = require('readline'),
+
+    fs = require('fs'),
+    path = require('path'),
+
+    Discord = require('discord.js'),
+    Gentleman = require('gentleman.js');
 
 var discordClient = null;
 let parsedChannels = {};
@@ -16,6 +19,169 @@ var line = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 });
+
+let botCommandMap = (args, isAdmin, id, userName) => {
+    let returnedMessage = null;
+
+    let addedMap = {};
+    let deletedMap = {};
+    let existMap = {};
+    switch (args[0]) {
+        case '/akobot':
+            returnedMessage = "[명령어목록]\n" +
+                "/비속어테스트 <...시험할 내용>\n" +
+                "/정상단어추가 <...추가할단어들>\n" +
+                "/비속어단어추가 <...추가할단어들>\n" +
+                "/정상단어삭제 <...삭제할단어들>\n" +
+                "/비속어단어삭제 <...추가할단어들>\n"+
+                "/영어비속어추가 <...추가할단어들>\n" +
+                "/영어비속어삭제 <...추가할단어들>\n";
+            break;
+        case '/비속어테스트':
+            if (!isAdmin) {
+                returnedMessage = '[권한없음] 이 명령어는 관리자만 사용가능합니다.';
+                break;
+            }
+
+            //명령어를 대화내용에서 제외합니다.
+            args.splice(0, 1);
+
+            returnedMessage = "[테스트결과] ";
+            let needToCheckMessage = args.join(' ');
+
+            let foundedBadWords = Gentleman.find(needToCheckMessage, true);
+            if (foundedBadWords.length != 0) {
+                let fixedMessage = Gentleman.fix(needToCheckMessage);
+                returnedMessage += `비속어를 발견했습니다. 비속어:[${foundedBadWords.join()}] 수정된 메시지:'${fixedMessage}'`;
+            } else {
+                returnedMessage += "비속어를 발견하지 못했습니다.";
+            }
+            break;
+        case '/정상단어추가':
+            if (!isAdmin) {
+                returnedMessage = '[권한없음] 이 명령어는 관리자만 사용가능합니다.';
+                break;
+            }
+
+            //명령어를 대화내용에서 제외합니다.
+            args.splice(0, 1);
+
+            for (let argsIndex in args) {
+                if (Gentleman.isExistNormalWord(args[argsIndex])) {
+                    existMap[args[argsIndex]] = true;
+                } else {
+                    addedMap[args[argsIndex]] = true;
+                }
+            }
+            returnedMessage = `[반영결과] 추가됨:[${Object.keys(addedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            Gentleman.addNormalWords(args);
+            break;
+        case '/비속어단어추가':
+            if (!isAdmin) {
+                returnedMessage = '[권한없음] 이 명령어는 관리자만 사용가능합니다.';
+                break;
+            }
+
+            //명령어를 대화내용에서 제외합니다.
+            args.splice(0, 1);
+
+            for (let argsIndex in args) {
+                if (Gentleman.isExistBadWord(args[argsIndex])) {
+                    existMap[args[argsIndex]] = true;
+                } else {
+                    addedMap[args[argsIndex]] = true;
+                }
+            }
+            returnedMessage = `[반영결과] 추가됨:[${Object.keys(addedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            Gentleman.addBadWords(args);
+            Gentleman.parse();
+            break;
+        case '/정상단어삭제':
+            if (!isAdmin) {
+                returnedMessage = '[권한없음] 이 명령어는 관리자만 사용가능합니다.';
+                break;
+            }
+
+            //명령어를 대화내용에서 제외합니다.
+            args.splice(0, 1);
+
+            for (let argsIndex in args) {
+                if (Gentleman.isExistNormalWord(args[argsIndex])) {
+                    existMap[args[argsIndex]] = true;
+                } else {
+                    deletedMap[args[argsIndex]] = true;
+                }
+            }
+            returnedMessage = `[반영결과] 삭제됨:[${Object.keys(deletedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            Gentleman.deleteNormalWords(args);
+            break;
+        case '/비속어단어삭제':
+            if (!isAdmin) {
+                returnedMessage = '[권한없음] 이 명령어는 관리자만 사용가능합니다.';
+                break;
+            }
+
+            //명령어를 대화내용에서 제외합니다.
+            args.splice(0, 1);
+
+            for (let argsIndex in args) {
+                if (Gentleman.isExistBadWord(args[argsIndex])) {
+                    existMap[args[argsIndex]] = true;
+                } else {
+                    deletedMap[args[argsIndex]] = true;
+                }
+            }
+
+            returnedMessage = `[반영결과] 삭제됨:[${Object.keys(deletedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            Gentleman.deleteBadWords(args);
+            Gentleman.parse();
+            break;
+            //
+            //"/영어비속어추가 <...추가할단어들>\n" +
+            //"/영어비속어삭제 <...추가할단어들>\n";
+        case '/영어비속어추가':
+            if (!isAdmin) {
+                returnedMessage = '[권한없음] 이 명령어는 관리자만 사용가능합니다.';
+                break;
+            }
+
+            //명령어를 대화내용에서 제외합니다.
+            args.splice(0, 1);
+
+            for (let argsIndex in args) {
+                if (Gentleman.isExistNormalWord(args[argsIndex])) {
+                    existMap[args[argsIndex]] = true;
+                } else {
+                    deletedMap[args[argsIndex]] = true;
+                }
+            }
+            returnedMessage = `[반영결과] 추가됨:[${Object.keys(deletedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            Gentleman.addSoftSearchWords(args);
+            break;
+        case '/영어비속어삭제':
+            if (!isAdmin) {
+                returnedMessage = '[권한없음] 이 명령어는 관리자만 사용가능합니다.';
+                break;
+            }
+
+            //명령어를 대화내용에서 제외합니다.
+            args.splice(0, 1);
+
+            for (let argsIndex in args) {
+                if (Gentleman.isExistBadWord(args[argsIndex])) {
+                    existMap[args[argsIndex]] = true;
+                } else {
+                    deletedMap[args[argsIndex]] = true;
+                }
+            }
+
+            returnedMessage = `[반영결과] 삭제됨:[${Object.keys(deletedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            Gentleman.deleteSoftSearchWords(args);
+            Gentleman.parse();
+            break;
+    }
+    return returnedMessage;
+};
 
 class AKOBot {
     static info() {
@@ -49,13 +215,35 @@ class AKOBot {
 
         // 비속어 판단 및 삭제처리
         discordClient.on('message', message => {
-            if(message.author.bot) return;
-            //message.author.username
-            var fixedMessage = Gentleman.fix(message.content);
-            if (message.content != fixedMessage) {
-                message.reply(`[비속어필터작동] ${fixedMessage}`);
-                message.delete();
-                logger(`[비속어필터작동] ${message.author.username}:${message}`);
+
+            if (message.author.bot) return;
+
+            //관리자권한을 가지고 있는 인원 목록을 얻어옵니다.
+            let administratorMap = {};
+            discordClient.guilds.map((guild) => {
+                guild.members.map((member) => {
+                    if (member.hasPermission("ADMINISTRATOR"))
+                        administratorMap[member.id] = member.nickname;
+                });
+            });
+
+            let isAdmin = typeof(administratorMap[message.author.id]) !== 'undefined';
+
+            if (message.content.length != 0 && message.content[0] == '/') {
+                let args = message.content.split(' ');
+                let replyMessage = botCommandMap(args, isAdmin, message.author.id, message.author.username);
+                if (replyMessage != null) message.reply(replyMessage);
+            }
+
+            if (true) {
+                var fixedMessage = Gentleman.fix(message.content);
+                if (message.content != fixedMessage) {
+                    let needToChangeMessage = `[비속어필터작동] ${fixedMessage}`;
+                    message.reply(needToChangeMessage);
+                    message.delete();
+                    //message.edit(needToChangeMessage).catch(console.error);;
+                    logger(`[비속어필터작동] ${message.author.username}:${message}`);
+                }
             }
         });
 
@@ -63,7 +251,7 @@ class AKOBot {
     }
 
     static sendMessage(message) {
-        for(var index in privates['default']){
+        for (var index in privates['default']) {
             parsedChannels[privates['default'][index]].sendMessage(message);
         }
     }
@@ -87,7 +275,7 @@ let commandMap = (input) => {
             break;
         case 'connect':
             AKOBot.connect();
-            fs.writeFile('./privates.json', JSON.stringify(privates, null, 4));
+            fs.writeFile('./data/privates.json', JSON.stringify(privates, null, 4));
             break;
         case 'stop':
         case 'exit':
@@ -129,6 +317,9 @@ dispatcher.on(events.ShutdownEvent, (event) => {
         line = null;
     }
     logger(`명령어 입력처리가 정지되었습니다.`);
+
+    Gentleman.saveAllData('./data/bad-words.json', './data/normal-words.json', './data/soft-search-words.json');
+    logger(`비속어 사전 정보가 저장되었습니다.`);
 }, dispatcher.LOW);
 
 var lengthLimit = (message, limit, dotLength) => {
@@ -162,15 +353,32 @@ dispatcher.on(events.CafeMemberChangedEvent, (event) => {
 }, dispatcher.LOW);
 
 
-
 // 인증에 필요한 정보들이 여기 담깁니다.
 var privates = {};
 
-try {
-    privates = require('./privates.json');
+// 봇 데이터가 담긴 폴더가 없으면 생성합니다.
+if (!fs.existsSync('./data')) fs.mkdirSync('./data');
+
+// 비속어 사전 파일을 불러옵니다.
+if (!fs.existsSync('./data/bad-words.json') ||
+    !fs.existsSync('./data/normal-words.json') ||
+    !fs.existsSync('./data/soft-search-words.json')) {
+
+    Gentleman.defaultLoad();
+    Gentleman.saveAllData(path.join(__dirname, './data/bad-words.json'),
+        path.join(__dirname, './data/normal-words.json'),
+        path.join(__dirname, './data/soft-search-words.json'));
+} else {
+    Gentleman.loadFile(path.join(__dirname, './data/bad-words.json'),
+        path.join(__dirname, './data/normal-words.json'),
+        path.join(__dirname, './data/soft-search-words.json'));
+}
+
+// 봇 인증에 필요한 개인정보를 불러옵니다.
+if (fs.existsSync('./data/privates.json')) {
+    privates = require('./data/privates.json');
     AKOBot.connect();
-} catch (error) {
-    logger(error);
+} else {
     AKOBot.info();
 }
 

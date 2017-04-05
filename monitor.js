@@ -23,6 +23,7 @@ class monitor {
             }
         });
 
+        //지속적 크롤링을 활성화합니다.
         this.on();
 
         //모니터가 켜졌다는 것을 알립니다.
@@ -124,6 +125,8 @@ class monitor {
 }
 
 module.exports = monitor;
+
+// DataTypeExample
 /*
  '0':
    { link: 'http://cafe.naver.com/ArticleRead.nhn?clubid=28950812&page=1&boardtype=L&articleid=509&referrerAllArt
