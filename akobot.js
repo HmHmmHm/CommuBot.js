@@ -28,7 +28,7 @@ let botCommandMap = (args, isAdmin, id, userName) => {
     let existMap = {};
     switch (args[0]) {
         case '/akobot':
-            returnedMessage = "[명령어목록]\n" +
+            returnedMessage = "[관리자 명령어 목록]\n" +
                 "/비속어테스트 <...시험할 내용>\n" +
                 "/정상단어추가 <...추가할단어들>\n" +
                 "/비속어단어추가 <...추가할단어들>\n" +
@@ -73,7 +73,7 @@ let botCommandMap = (args, isAdmin, id, userName) => {
                     addedMap[args[argsIndex]] = true;
                 }
             }
-            returnedMessage = `[반영결과] 추가됨:[${Object.keys(addedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            returnedMessage = `[반영결과] 정상단어 추가됨 - [${Object.keys(addedMap).join()}] 단어 이미존재 - [${Object.keys(existMap).join()}]`;
             Gentleman.addNormalWords(args);
             break;
         case '/비속어단어추가':
@@ -92,7 +92,7 @@ let botCommandMap = (args, isAdmin, id, userName) => {
                     addedMap[args[argsIndex]] = true;
                 }
             }
-            returnedMessage = `[반영결과] 추가됨:[${Object.keys(addedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            returnedMessage = `[반영결과] 비속어 추가됨 - [${Object.keys(addedMap).join()}] 단어 이미존재 - [${Object.keys(existMap).join()}]`;
             Gentleman.addBadWords(args);
             Gentleman.parse();
             break;
@@ -112,7 +112,7 @@ let botCommandMap = (args, isAdmin, id, userName) => {
                     deletedMap[args[argsIndex]] = true;
                 }
             }
-            returnedMessage = `[반영결과] 삭제됨:[${Object.keys(deletedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            returnedMessage = `[반영결과] 정상단어 삭제됨 - [${Object.keys(deletedMap).join()}] 단어 이미존재 - [${Object.keys(existMap).join()}]`;
             Gentleman.deleteNormalWords(args);
             break;
         case '/비속어단어삭제':
@@ -132,7 +132,7 @@ let botCommandMap = (args, isAdmin, id, userName) => {
                 }
             }
 
-            returnedMessage = `[반영결과] 삭제됨:[${Object.keys(deletedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            returnedMessage = `[반영결과] 비속어 삭제됨 - [${Object.keys(deletedMap).join()}] 단어 이미존재 - [${Object.keys(existMap).join()}]`;
             Gentleman.deleteBadWords(args);
             Gentleman.parse();
             break;
@@ -155,7 +155,7 @@ let botCommandMap = (args, isAdmin, id, userName) => {
                     deletedMap[args[argsIndex]] = true;
                 }
             }
-            returnedMessage = `[반영결과] 추가됨:[${Object.keys(deletedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            returnedMessage = `[반영결과] 영어 비속어 추가됨 - [${Object.keys(deletedMap).join()}] 단어 이미존재 - [${Object.keys(existMap).join()}]`;
             Gentleman.addSoftSearchWords(args);
             break;
         case '/영어비속어삭제':
@@ -175,7 +175,7 @@ let botCommandMap = (args, isAdmin, id, userName) => {
                 }
             }
 
-            returnedMessage = `[반영결과] 삭제됨:[${Object.keys(deletedMap).join()}] 이미존재:[${Object.keys(existMap).join()}]`;
+            returnedMessage = `[반영결과] 영어 비속어 삭제됨 - [${Object.keys(deletedMap).join()}] 단어 이미존재 - [${Object.keys(existMap).join()}]`;
             Gentleman.deleteSoftSearchWords(args);
             Gentleman.parse();
             break;
@@ -270,12 +270,17 @@ let commandMap = (input) => {
             logger(`토큰 입력이 완료되었습니다.`);
             break;
         case 'default':
+            if(typeof(privates['default']) == 'undefined') privates['default'] = [];
             privates['default'].push(args[1]);
             logger(`채널명 입력이 완료되었습니다.`);
             break;
         case 'connect':
-            AKOBot.connect();
             fs.writeFile('./data/privates.json', JSON.stringify(privates, null, 4));
+            AKOBot.connect();
+            break;
+        case 'talk':
+            args.splice(0, 1);
+            AKOBot.sendMessage(args.join(''));
             break;
         case 'stop':
         case 'exit':
@@ -334,20 +339,20 @@ var lengthLimit = (message, limit, dotLength) => {
 
 //모니터가 새 게시글을 발견하면 해당 사항을 알립니다.
 dispatcher.on(events.NewArticleEvent, (event) => {
-    let message = `[새 게시글] [${event.category}] '${lengthLimit(event.title, 15)}' ${event.prettyLink}`;
+    let message = `# 새 게시글이 있습니다! [${event.category}] 에, '${lengthLimit(event.title, 15)}' 라는 제목의 글이 작성되었습니다! ${event.prettyLink}`;
     logger(message);
     AKOBot.sendMessage(message);
 }, dispatcher.LOW);
 
 dispatcher.on(events.ArticleCommentChangedEvent, (event) => {
     if (event.oldCommentCount >= event.newCommentCount) return;
-    let message = `[새 댓글] [${event.oldCommentCount}개->${event.newCommentCount}개] [${event.category}] '${lengthLimit(event.title, 15)}' ${event.prettyLink}`;
+    let message = `# 새 댓글이 있습니다! [${event.category}] '${lengthLimit(event.title, 15)}'의 댓글 수가 ${event.oldCommentCount}개에서 ${event.newCommentCount}개로 변동되었습니다. ${event.prettyLink}`;
     logger(message);
     AKOBot.sendMessage(message);
 }, dispatcher.LOW);
 
 dispatcher.on(events.CafeMemberChangedEvent, (event) => {
-    let message = `[새 회원] 회원수:${event.oldMemberCount}명->${event.newMemberCount}명, 승인대기수:${event.oldPreMemberCount}명->${event.newPreMemberCount}명`;
+    let message = `# 회원 수 변동이 있습니다! 기존 회원수 ${event.oldMemberCount}명에서, ${event.newMemberCount}명으로 회원수가 변동되었고, 등업 신청 승인대기수는 ${event.oldPreMemberCount}->${event.newPreMemberCount}명 입니다.`;
     logger(message);
     AKOBot.sendMessage(message);
 }, dispatcher.LOW);
