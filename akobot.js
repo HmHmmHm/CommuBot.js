@@ -352,7 +352,9 @@ dispatcher.on(events.ArticleCommentChangedEvent, (event) => {
 }, dispatcher.LOW);
 
 dispatcher.on(events.CafeMemberChangedEvent, (event) => {
-    let message = `# 회원 수 변동이 있습니다! 기존 회원수 ${event.oldMemberCount}명에서, ${event.newMemberCount}명으로 회원수가 변동되었고, 등업 신청 승인대기수는 ${event.oldPreMemberCount}->${event.newPreMemberCount}명 입니다.`;
+    let message = `[새 회원] 회원 수:${event.oldMemberCount}명->${event.newMemberCount}명`;
+    if (event.oldPreMemberCount !== event.newPreMemberCount)
+        message += `승인 대기수:${event.oldPreMemberCount}명->${event.newPreMemberCount}명`;
     logger(message);
     AKOBot.sendMessage(message);
 }, dispatcher.LOW);
